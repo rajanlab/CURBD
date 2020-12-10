@@ -1,5 +1,12 @@
 function [out] = trainMultiRegionRNN(activity,params)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Trains a data-constrained multi-region RNN. The RNN can be used for,
+% among other things, Current-Based Decomposition (CURBD). Ref:
+%
+% Perich MG, et al. Inferring brain-wide currents using data-constrained
+% recurrent neural network models. bioRxiv. DOI:
+%
 % out = trainMultiRegionRNN(activity,params)
 %
 % Note that region identity is not used in training unless the normByRegion
