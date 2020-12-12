@@ -17,7 +17,7 @@ N            = 500;  % number of units in each region
 ga           = 1.8;  % chaos parameter for Region A
 gb           = 1.5;  % chaos parameter for Region B
 gc           = 1.2;  % chaos parameter for Region C
-tauTrue      = 0.1;  % decay time constant of RNNs
+tau      = 0.1;  % decay time constant of RNNs
 fracInterReg = 0.01; % fraction of inter-region connections
 ampInterReg  = 0.01; % amplitude of inter-region connections
 fracExternal = 0.5;  % fraction of external inputs to B/C
@@ -132,21 +132,21 @@ for tt = 1:length(tData)
     JRa = Ja * Ra(:, tt) + ...
         ampInterReg * w_B2A .* Rb(:,tt) + ...
         ampInterReg * w_C2A .* Rc(:,tt);
-    hCa = hCa + dtData*(-hCa + JRa) / tauTrue;
+    hCa = hCa + dtData*(-hCa + JRa) / tau;
     
     % sequence driven
     JRb = Jb * Rb(:, tt) + ...
         ampInterReg * w_A2B .* Ra(:,tt) + ...
         ampInterReg * w_C2B .* Rc(:,tt) + ...
         ampInB * w_Seq2B .* hBump(:,tt);
-    hCb = hCb + dtData * (-hCb + JRb) / tauTrue;
+    hCb = hCb + dtData * (-hCb + JRb) / tau;
     
     % fixed point driven
     JRc = Jc * Rc(:, tt) + ...
         ampInterReg * w_B2C .* Rb(:,tt) + ...
         ampInterReg * w_A2C .* Ra(:,tt) + ...
         ampInC * w_Fix2C .* hFP(:,tt);
-    hCc = hCc + dtData * (-hCc + JRc) / tauTrue;
+    hCc = hCc + dtData * (-hCc + JRc) / tau;
     
 end
 
