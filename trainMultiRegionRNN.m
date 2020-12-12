@@ -27,6 +27,9 @@ function [out] = trainMultiRegionRNN(activity,params)
 % OUTPUTS:
 %   out      : struct containing the results of the simulation
 %
+%
+% Written by Matthew G. Perich. Updated December 2020.
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % data parameters
 dtData         = NaN;     % time step (in s) of the training data

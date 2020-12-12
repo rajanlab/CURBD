@@ -22,6 +22,9 @@ function [CURBD,CURBDLabels] = computeCURBD(varargin)
 %       Target regions are in rows and source regions are in columns.
 %   CURBDLabels: M x M cell array with string labels for each current
 %
+% 
+% Written by Matthew G. Perich. Updated December 2020.
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % available parameters
 current_type = 'all'; % 'excitatory', 'inhibitory', or 'all'
