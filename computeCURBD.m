@@ -3,7 +3,7 @@ function [CURBD,CURBDLabels] = computeCURBD(varargin)
 %
 % Performs Current-Based Decomposition (CURBD) of multi-region data. Ref:
 %
-% Perich MG, et al. Inferring brain-wide currents using data-constrained
+% Perich MG et al. Inferring brain-wide interactions using data-constrained
 % recurrent neural network models. bioRxiv. DOI:
 %
 % Two input options:

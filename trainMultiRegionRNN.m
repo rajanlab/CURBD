@@ -4,7 +4,7 @@ function [out] = trainMultiRegionRNN(activity,params)
 % Trains a data-constrained multi-region RNN. The RNN can be used for,
 % among other things, Current-Based Decomposition (CURBD). Ref:
 %
-% Perich MG, et al. Inferring brain-wide currents using data-constrained
+% Perich MG et al. Inferring brain-wide interactions using data-constrained
 % recurrent neural network models. bioRxiv. DOI:
 %
 % out = trainMultiRegionRNN(activity,params)
@@ -252,7 +252,11 @@ for nRun=1:nRunTot
         idx = randi(nUnits);
         subplot(2,4,1);
         hold on;
-        imagesc((nonlinearity(Adata(iTarget,:))));
+        if strcmpi(whichType,'currents')
+            imagesc(nonlinearity((Adata(iTarget,:))));            
+        else
+            imagesc((Adata(iTarget,:)));
+        end
         axis tight;
         title('real');
         set(gca,'Box','off','TickDir','out','FontSize',14);
@@ -265,7 +269,11 @@ for nRun=1:nRunTot
         subplot(2,4,[3 4 7 8]);
         hold all;
         plot(tRNN,RNN(iTarget(idx),:));
-        plot(tData,(nonlinearity(Adata(iTarget(idx),:))));
+        if strcmpi(whichType,'currents')
+            imagesc(nonlinearity((Adata(iTarget,:))));            
+        else
+            imagesc((Adata(iTarget,:)));
+        end
         title(nRun)
         set(gca,'Box','off','TickDir','out','FontSize',14);
         subplot(2,4,5);

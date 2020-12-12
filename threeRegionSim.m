@@ -3,7 +3,10 @@ function out = threeRegionSim(params)
 %
 % out = threeRegionSim(params)
 %
-% Generates a simulated dataset with three interacting regions.
+% Generates a simulated dataset with three interacting regions. Ref:
+%
+% Perich MG et al. Inferring brain-wide interactions using data-constrained
+% recurrent neural network models. bioRxiv. DOI:
 %
 % INPUTS:
 %   params : (optional) parameter struct. See code below for options.
@@ -11,9 +14,11 @@ function out = threeRegionSim(params)
 % OUTPUTS:
 %   out : output struct with simulation results and parameters
 %
+% Written by Matthew G. Perich. Updated December 2020.
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % initialize variables
-N            = 500;  % number of units in each region
+N            = 300;  % number of units in each region
 ga           = 1.8;  % chaos parameter for Region A
 gb           = 1.5;  % chaos parameter for Region B
 gc           = 1.2;  % chaos parameter for Region C
@@ -196,7 +201,7 @@ out = struct( ...
     'w_C2B',w_C2B, ...
     'w_Fix2C',w_Fix2C, ...
     'w_Seq2B',w_Seq2B, ...
-    'param',out_params);
+    'params',out_params);
 
 if plotSim
     % plot simulation
