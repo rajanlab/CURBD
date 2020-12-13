@@ -135,9 +135,9 @@ Adata = activity;
 % normalize
 if normByRegion
     if ~isnan(nRegions)
-        disp('Not implemented yet...');
-%         Adata([in_AMY in_HIP],:) = Adata([in_AMY in_HIP],:) / max(max(Adata([in_AMY in_HIP],:)));
-%         Adata([in_SMA in_ACC],:) = Adata([in_SMA in_ACC],:) / max(max(Adata([in_SMA in_ACC],:)));
+        for iReg = 1:nRegions
+            Adata(regions{iReg,2},:) = Adata(regions{iReg,2},:) / max(max(Adata(regions{iReg,2},:)));
+        end
     else
         error('ERROR: no regions were defined. Cannot normalize by region.');
     end
