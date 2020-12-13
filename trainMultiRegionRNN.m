@@ -252,7 +252,7 @@ for nRun=1:nRunTot
         idx = randi(nUnits);
         subplot(2,4,1);
         hold on;
-        if strcmpi(whichType,'currents')
+        if strcmpi(trainType,'currents')
             imagesc(nonlinearity((Adata(iTarget,:))));            
         else
             imagesc((Adata(iTarget,:)));
@@ -269,7 +269,7 @@ for nRun=1:nRunTot
         subplot(2,4,[3 4 7 8]);
         hold all;
         plot(tRNN,RNN(iTarget(idx),:));
-        if strcmpi(whichType,'currents')
+        if strcmpi(trainType,'currents')
             imagesc(nonlinearity((Adata(iTarget,:))));            
         else
             imagesc((Adata(iTarget,:)));
