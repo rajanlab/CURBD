@@ -211,30 +211,30 @@ for nRun=1:nRunTot
         
         % check if the RNN time coincides with a data point to update J
         if (tLearn>=dtData)
+            tLearn = 0;
+            % compute error
+            err = zeros(size(Adata,1),1);
+            switch lower(trainType)
+                case 'currents'
+                    err(1:nUnits) = JR(1:nUnits, :) - Adata(1:nUnits, iLearn);
+                case 'rates'
+                    err(1:nUnits) = RNN(1:nUnits, tt) - Adata(1:nUnits, iLearn);
+            end
+
+            % update chi2 using this error
+            chi2(nRun) = chi2(nRun) + mean(err.^2);
+
+            % update learning index
+            iLearn = iLearn + 1;
+
             if  (nRun<=nRunTrain)
-                tLearn = 0;
-                % compute error
-                err = zeros(size(Adata,1),1);
-                switch lower(trainType)
-                    case 'currents'
-                        err(1:nUnits) = JR(1:nUnits, :) - Adata(1:nUnits, iLearn);
-                    case 'rates'
-                        err(1:nUnits) = RNN(1:nUnits, tt) - Adata(1:nUnits, iLearn);
-                end
-                
                 % update J based on error gradient
                 k = PJ*RNN(iTarget, tt);
                 rPr = RNN(iTarget, tt)'*k;
                 c = 1.0/(1.0 + rPr);
                 PJ = PJ - c*(k*k');
                 J(1:nUnits, iTarget) = J(1:nUnits, iTarget) - c*err(1:nUnits, :)*k';
-                
             end
-            % update chi2 using this error
-            chi2(nRun) = chi2(nRun) + mean(err.^2);
-            
-            % update learning index
-            iLearn = iLearn + 1;
         end
     end
     
