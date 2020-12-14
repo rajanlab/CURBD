@@ -8,8 +8,12 @@
 % Written by Matthew G. Perich. Updated December 2020.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+clear all;
+close all;
+clc;
 
-sim = threeRegionSim();
+% simulate three interacting regions with external inputs as in Ref. above
+sim = threeRegionSim(struct('N',100));
 
 activity = cat(1,sim.Ra,sim.Rb,sim.Rc);
 regions = { ...
@@ -18,14 +22,35 @@ regions = { ...
     'Region C',sim.params.Na+sim.params.Nb+1:sim.params.Na+sim.params.Nb+sim.params.Nc; ...
     };
 
+
+% train Model RNN targeting these three regions
 model = trainMultiRegionRNN(activity, struct( ...
     'dtData',sim.params.dtData, ...
-    'dtFactor',10, ...
+    'dtFactor',5, ...
     'trainType','currents', ...
     'regionNames',{regions(:,1)}, ...
     'regionIDs',{regions(:,2)}, ...
-    'tauRNN',2*sim.params.tau, ...
-    'nRuns',100, ...
-    'nFree',5));
+    'tauRNN',sim.params.tau/2, ...
+    'nRunTrain',500, ...
+    'nRunFree',5));
 
+
+% do CURBD
 CURBD = computeCURBD(model);
+
+
+% plot heatmaps of currents
+figure('Position',[100 100 900 900]);
+count = 1;
+for iTarget = 1:size(CURBD,1)
+    for iSource = 1:size(CURBD,2)
+        subplot(size(CURBD,1),size(CURBD,2),count); hold all; count = count + 1;
+        imagesc(model.tRNN,1:sim.params.Na,CURBD{iTarget,iSource});
+        axis tight;
+        set(gca,'Box','off','TickDir','out','FontSIze',14,'CLim',[-1 1]);
+        xlabel('Time (s)');
+        ylabel(['Neurons in ' regions{iTarget,1}]);
+        title([regions{iSource,1} ' to ' regions{iTarget,1}]);
+    end
+end
+colormap winter;

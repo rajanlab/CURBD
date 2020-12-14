@@ -18,13 +18,13 @@ function out = threeRegionSim(params)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % initialize variables
-N            = 300;  % number of units in each region
+N            = 100;  % number of units in each region
 ga           = 1.8;  % chaos parameter for Region A
 gb           = 1.5;  % chaos parameter for Region B
-gc           = 1.2;  % chaos parameter for Region C
-tau      = 0.1;  % decay time constant of RNNs
-fracInterReg = 0.01; % fraction of inter-region connections
-ampInterReg  = 0.01; % amplitude of inter-region connections
+gc           = 1.5;  % chaos parameter for Region C
+tau          = 0.1;  % decay time constant of RNNs
+fracInterReg = 0.05; % fraction of inter-region connections
+ampInterReg  = 0.2; % amplitude of inter-region connections
 fracExternal = 0.5;  % fraction of external inputs to B/C
 ampInB       = 1;    % amplitude of external inputs to Region B
 ampInC       = -1;   % amplitude of external inputs to Region C
@@ -222,9 +222,10 @@ if plotSim
     set(gca,'Box','off','TickDir','out','FontSize',14);
     title('DI matrix A');
     subplot(4,3,3); hold all;
-    plot(tData, Ra(round(rand(1,1)*Na), :),'LineWidth',2);
-    plot(tData, Ra(round(rand(1,1)*Na), :),'LineWidth',2);
-    plot(tData, Ra(round(rand(1,1)*Na), :),'LineWidth',2);
+    idx = randperm(Na);
+    plot(tData, Ra(idx(1), :),'LineWidth',2);
+    plot(tData, Ra(idx(2), :),'LineWidth',2);
+    plot(tData, Ra(idx(3), :),'LineWidth',2);
     ylim([-1 1])
     title('units from RNN A');
     axis square;
@@ -245,9 +246,10 @@ if plotSim
     set(gca,'Box','off','TickDir','out','FontSize',14);
     title('DI matrix B');
     subplot(4,3,6); hold all;
-    plot(tData, Rb(round(rand(1,1)*Nb), :),'LineWidth',2);
-    plot(tData, Rb(round(rand(1,1)*Nb), :),'LineWidth',2);
-    plot(tData, Rb(round(rand(1,1)*Nb), :),'LineWidth',2);
+    idx = randperm(Nb);
+    plot(tData, Rb(idx(1), :),'LineWidth',2);
+    plot(tData, Rb(idx(2), :),'LineWidth',2);
+    plot(tData, Rb(idx(3), :),'LineWidth',2);
     ylim([-1 1])
     title('units from RNN B');
     axis square;
@@ -268,9 +270,10 @@ if plotSim
     set(gca,'Box','off','TickDir','out','FontSize',14);
     title('DI matrix C');
     subplot(4,3,9); hold all;
-    plot(tData, Rc(round(rand(1,1)*Nc), :),'LineWidth',2);
-    plot(tData, Rc(round(rand(1,1)*Nc), :),'LineWidth',2);
-    plot(tData, Rc(round(rand(1,1)*Nc), :),'LineWidth',2);
+    idx = randperm(Nc);
+    plot(tData, Rc(idx(1), :),'LineWidth',2);
+    plot(tData, Rc(idx(2), :),'LineWidth',2);
+    plot(tData, Rc(idx(3), :),'LineWidth',2);
     ylim([-1 1])
     title('units from RNN C');
     axis square;
