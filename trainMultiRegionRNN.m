@@ -43,8 +43,8 @@ tauRNN         = 0.01;    % decay costant of RNN units
 tauWN          = 0.1;     % decay constant on filtered white noise inputs
 ampInWN        = 0.01;    % input amplitude of filtered white noise
 % training parameters
-nRuns          = 2000;    % number of training runs
-nFree          = 10;      % number of untrained runs at end
+nRunTrain      = 2000;    % number of training runs
+nRunFree       = 10;      % number of untrained runs at end
 P0             = 1;       % learning rate
 trainType      = 'rates'; % train 'currents' or 'rates' directly
 nonlinearity   = @tanh;   % inline function for nonlinearity
@@ -62,7 +62,7 @@ if isnan(dtData)
     error('ERROR: The dt of the data must be specified.');
 end
 dtRNN = dtData / dtFactor;
-nRunTot = nRuns + nFree;
+nRunTot = nRunTrain + nRunFree;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % convert labels into a regions list
 %   cell array, column 1 is region name, column 2 is indices in RNN
@@ -210,31 +210,32 @@ for nRun=1:nRunTot
         H = H + dtRNN*(-H + JR)/tauRNN;
         
         % check if the RNN time coincides with a data point to update J
-        if (tLearn>=dtData) && (nRun<nRunTot-nFree)
-            tLearn = 0;
-            % compute error
-            err = zeros(size(Adata,1),1);
-            switch lower(trainType)
-                case 'currents'
-                    err(1:nUnits) = JR(1:nUnits, :) - Adata(1:nUnits, iLearn);
-                case 'rates'
-                    err(1:nUnits) = RNN(1:nUnits, tt) - Adata(1:nUnits, iLearn);
+        if (tLearn>=dtData)
+            if  (nRun<=nRunTrain)
+                tLearn = 0;
+                % compute error
+                err = zeros(size(Adata,1),1);
+                switch lower(trainType)
+                    case 'currents'
+                        err(1:nUnits) = JR(1:nUnits, :) - Adata(1:nUnits, iLearn);
+                    case 'rates'
+                        err(1:nUnits) = RNN(1:nUnits, tt) - Adata(1:nUnits, iLearn);
+                end
+                
+                % update J based on error gradient
+                k = PJ*RNN(iTarget, tt);
+                rPr = RNN(iTarget, tt)'*k;
+                c = 1.0/(1.0 + rPr);
+                PJ = PJ - c*(k*k');
+                J(1:nUnits, iTarget) = J(1:nUnits, iTarget) - c*err(1:nUnits, :)*k';
+                
             end
-            
             % update chi2 using this error
             chi2(nRun) = chi2(nRun) + mean(err.^2);
-            
-            % update J based on error gradient
-            k = PJ*RNN(iTarget, tt);
-            rPr = RNN(iTarget, tt)'*k;
-            c = 1.0/(1.0 + rPr);
-            PJ = PJ - c*(k*k');
-            J(1:nUnits, iTarget) = J(1:nUnits, iTarget) - c*err(1:nUnits, :)*k';
             
             % update learning index
             iLearn = iLearn + 1;
         end
-        
     end
     
     rModelSample = RNN(iTarget, iModelSample);
@@ -253,7 +254,7 @@ for nRun=1:nRunTot
         subplot(2,4,1);
         hold on;
         if strcmpi(trainType,'currents')
-            imagesc(nonlinearity((Adata(iTarget,:))));            
+            imagesc(nonlinearity((Adata(iTarget,:))));
         else
             imagesc((Adata(iTarget,:)));
         end
@@ -270,9 +271,9 @@ for nRun=1:nRunTot
         hold all;
         plot(tRNN,RNN(iTarget(idx),:));
         if strcmpi(trainType,'currents')
-            imagesc(nonlinearity((Adata(iTarget,:))));            
+            plot(tData,nonlinearity((Adata(iTarget(idx),:))));
         else
-            imagesc((Adata(iTarget,:)));
+            plot(tData,(Adata(iTarget(idx),:)));
         end
         title(nRun)
         set(gca,'Box','off','TickDir','out','FontSize',14);
@@ -300,8 +301,8 @@ outParams = struct( ...
     'tauWN',tauWN, ...
     'ampInWN',ampInWN, ...
     'nRunTot',nRunTot, ...
-    'nRuns',nRuns, ...
-    'nFree',nFree, ...
+    'nRunTrain',nRunTrain, ...
+    'nRunFree',nRunFree, ...
     'trainType',trainType, ...
     'nonlinearity',nonlinearity, ...
     'resetPoints',resetPoints, ...
