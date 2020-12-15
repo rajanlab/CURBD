@@ -21,9 +21,9 @@ sim = curbd.threeRegionSim(number_units=100)
 
 activity = np.concatenate((sim['Ra'], sim['Rb'], sim['Rc']), 0)
 
-max = np.max(np.abs(activity))
-xBump = 0.999 * activity / max
-hBump = np.arctanh(xBump)
+# max = np.max(np.abs(activity))
+# xBump = 0.999 * activity / max
+# hBump = np.arctanh(xBump)
 
 Na = sim['params']['Na']
 Nb = sim['params']['Nb']
@@ -35,10 +35,10 @@ regions.append(['Region B', np.arange(Na, Na + Nb)])
 regions.append(['Region C', np.arange(Na + Nb, Na + Nb + Nc)])
 regions = np.array(regions, dtype=object)
 
-model = curbd.trainMultiRegionRNN(hBump,
+model = curbd.trainMultiRegionRNN(activity,
                                   dtData=sim['params']['dtData'],
                                   dtFactor=5,
-                                  trainType='currents',
+                                  trainType='rates',
                                   regions=regions,
                                   tauRNN=2*sim['params']['tau']/2,
                                   nRunTrain=500,
@@ -65,3 +65,4 @@ for iTarget in range(n_regions):
         axn.xaxis.label.set_fontsize(8)
         axn.yaxis.label.set_fontsize(8)
 fig.subplots_adjust(hspace=0.4, wspace=0.3)
+fig.show()
