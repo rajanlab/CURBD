@@ -48,9 +48,8 @@ def bump_gen(number_units, dt_data, steps):
                  norm_by)
         xBump[i, :] = np.exp(-stuff)
 #    hBump = np.log((xBump + 0.01)/(1 - xBump + 0.01))  # current from rate
-    xBump = xBump/xBump.max()
-    xBump = np.minimum(xBump, 0.999)
-    xBump = np.maximum(xBump, -0.999)
+    max = np.max(np.abs(xBump))
+    xBump = 0.999 * xBump / max
     hBump = np.arctanh(xBump)
     return tData, xBump, hBump
 
@@ -131,9 +130,9 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
 
     # set up target training data
     Adata = activity.copy()
-    Adata = Adata/Adata.max()
-    Adata = np.minimum(Adata, 0.999)
-    Adata = np.maximum(Adata, -0.999)
+#    Adata = Adata/Adata.max()
+#    Adata = np.minimum(Adata, 0.999)
+#    Adata = np.maximum(Adata, -0.999)
 
     # get standard deviation of entire data
     stdData = np.std(Adata[iTarget, :])
@@ -218,7 +217,7 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
                     J[:, iTarget.flatten()] = J[:, iTarget.reshape((number_units))] - c*np.outer(err.flatten(), k.flatten())
 
         rModelSample = RNN[iTarget, :][:, iModelSample]
-        distance = np.linalg.norm(Adata[iTarget, :] - rModelSample)
+        distance = np.linalg.norm(nonLinearity(Adata[iTarget, :]) - rModelSample)
         pVar = 1 - (distance / (math.sqrt(len(iTarget) * len(tData))
                     * stdData)) ** 2
         pVars.append(pVar)
@@ -233,11 +232,11 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
                 ax.imshow(nonLinearity(Adata), aspect='auto')
             elif trainType == 'rates':
                 ax.imshow(Adata[iTarget, :])
-            ax.set_title('real')
+            ax.set_title('real rates')
 
             ax = fig.add_subplot(gs[0, 1])
             ax.imshow(RNN, aspect='auto')
-            ax.set_title('model')
+            ax.set_title('model rates')
             ax.axis('off')
 
             ax = fig.add_subplot(gs[1, 0])
@@ -256,7 +255,7 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
             elif trainType == 'rates':
                 ax.plot(tData, Adata[iTarget[idx], :])
             ax.set_title(nRun)
-
+            fig.show()
             plt.pause(0.05)
 
     out_params = {}
@@ -601,6 +600,7 @@ def threeRegionSim(number_units=100,
         ax = fig.add_subplot(4, 3, 11)
         ax.pcolormesh(tData, range(Nc), Rseq)
         ax.set_title('Sequence Driver')
+        plt.pause(0.05)
         fig.show()
     return out
 
@@ -658,8 +658,6 @@ def computeCURBD(sim):
     # loop along all bidirectional pairs of regions
     CURBD = np.empty((nRegions, nRegions), dtype=np.object)
     CURBDLabels = np.empty((nRegions, nRegions), dtype=np.object)
-    import ipdb
-    ipdb.set_trace()
 
     for idx_trg in range(nRegions):
         in_trg = regions[idx_trg, 1]
