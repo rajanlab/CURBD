@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import numpy as np
 import pylab
 
 import curbd
@@ -7,9 +6,8 @@ import curbd
 dtData = 0.0641
 number_units = 255
 steps = 165
-trainType='currents'
+trainType = 'rates'
 tData, xBump, hBump = curbd.bump_gen(number_units, dtData, steps)
-
 
 if trainType == 'currents':
     activity = hBump
@@ -17,9 +15,9 @@ else:
     activity = xBump
 
 out = curbd.trainMultiRegionRNN(activity, dtData, trainType=trainType,
-                                verbose=True, dtFactor=100, nRunTrain=60,
+                                verbose=True, dtFactor=100, nRunTrain=40,
                                 tauRNN=0.01, g=1.5, ampInWN=0.1, nRunFree=1,
-                                plotStatus=False)
+                                plotStatus=True)
 
 mid = int(number_units/2)
 fig = pylab.figure()
