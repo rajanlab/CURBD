@@ -47,7 +47,6 @@ def bump_gen(number_units, dt_data, steps):
         stuff = (((float(i+1) - number_units * tData / tData[-1]) ** 2.0) /
                  norm_by)
         xBump[i, :] = np.exp(-stuff)
-#    hBump = np.log((xBump + 0.01)/(1 - xBump + 0.01))  # current from rate
     max = np.max(np.abs(xBump))
     xBump = 0.999 * xBump / max
     hBump = np.arctanh(xBump)
@@ -56,8 +55,10 @@ def bump_gen(number_units, dt_data, steps):
 
 def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
                         tauWN=0.1, ampInWN=0.01, nRunTrain=2000,
-                        nRunFree=10, P0=1.0, trainType='rates',
-                        nonLinearity=np.tanh, resetPoints=None,
+                        nRunFree=10, P0=1.0, trainType='currents',
+                        nonLinearity=np.tanh,
+                        nonLinearity_inv=np.arctanh,
+                        resetPoints=None,
                         plotStatus=False, verbose=False,
                         regions=None):
     r"""
@@ -86,9 +87,12 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
     P0: float
         learning rate
     trainType: str
-        train 'currents' or 'rates' directly
+        train 'currents' or 'rates' directly. If 'rates', activity values must
+        be in the domain of nonLinearity_inv.
     nonLinearity: function
         inline function for nonLinearity
+    nonLinearity_inv: function
+        inline function for inverse nonLinearity, used of trainTypes is rates
     resetPoints: list of int
         list of indeces into T. default to only set initial state at time 1.
     plotStatus: bool
@@ -172,9 +176,12 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
     # start training
     # loop along training runs
     for nRun in range(0, nRunTot):
-        H = Adata[:, 0, np.newaxis]
-        # convert to currents through nonLinearity
-        RNN[:, 0, np.newaxis] = nonLinearity(H)
+        if trainType == 'rates':
+            H = nonLinearity_inv(Adata[:, 0, np.newaxis])
+            RNN[:, 0, np.newaxis] = Adata[:, 0, np.newaxis]
+        else:
+            H = Adata[:, 0, np.newaxis]
+            RNN[:, 0, np.newaxis] = nonLinearity(H)
         # variables to track when to update the J matrix since the RNN and
         # data can have different dt values
         tLearn = 0  # keeps track of current time
@@ -188,7 +195,10 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
             # be used, but it's an option for concatenating multi-trial data
             if tt in resetPoints:
                 timepoint = math.floor(tt / dtFactor)
-                H = Adata[:, timepoint]
+                if trainType == 'rates':
+                    H = nonLinearity_inv(Adata[:, 0, np.newaxis])
+                else:
+                    H = Adata[:, timepoint]
             # compute next RNN step
             RNN[:, tt, np.newaxis] = nonLinearity(H)
             JR = (J.dot(RNN[:, tt]).reshape((number_units, 1)) +
@@ -200,7 +210,7 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
                 if trainType == 'currents':
                     err = JR - Adata[:, iLearn, np.newaxis]
                 elif trainType == 'rates':
-                    err = RNN[:, tt] - Adata[:, iLearn, np.newaxis]
+                    err = RNN[:, tt, np.newaxis] - Adata[:, iLearn, np.newaxis]
                 else:
                     raise ValueError("Error training type not recognized."
                                      " Pick 'currents' or 'rates'")
@@ -217,7 +227,10 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
                     J[:, iTarget.flatten()] = J[:, iTarget.reshape((number_units))] - c*np.outer(err.flatten(), k.flatten())
 
         rModelSample = RNN[iTarget, :][:, iModelSample]
-        distance = np.linalg.norm(nonLinearity(Adata[iTarget, :]) - rModelSample)
+        if trainType == 'rates':
+            distance = np.linalg.norm(Adata[iTarget, :] - rModelSample)
+        else:
+            distance = np.linalg.norm(nonLinearity(Adata[iTarget, :]) - rModelSample)
         pVar = 1 - (distance / (math.sqrt(len(iTarget) * len(tData))
                     * stdData)) ** 2
         pVars.append(pVar)
