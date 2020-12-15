@@ -20,6 +20,11 @@ import curbd
 sim = curbd.threeRegionSim(number_units=100)
 
 activity = np.concatenate((sim['Ra'], sim['Rb'], sim['Rc']), 0)
+
+max = np.max(np.abs(activity))
+xBump = 0.999 * activity / max
+hBump = np.arctanh(xBump)
+
 Na = sim['params']['Na']
 Nb = sim['params']['Nb']
 Nc = sim['params']['Nc']
@@ -30,7 +35,7 @@ regions.append(['Region B', np.arange(Na, Na + Nb)])
 regions.append(['Region C', np.arange(Na + Nb, Na + Nb + Nc)])
 regions = np.array(regions, dtype=object)
 
-model = curbd.trainMultiRegionRNN(activity,
+model = curbd.trainMultiRegionRNN(hBump,
                                   dtData=sim['params']['dtData'],
                                   dtFactor=5,
                                   trainType='currents',
