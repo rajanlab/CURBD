@@ -1,6 +1,6 @@
 
 dtData = 0.0641
-number_units = 500
+number_units = 255
 steps = 165
 [tData, xBump, hBump] = bumpgen(number_units, dtData, steps);
 
@@ -14,6 +14,14 @@ model = trainMultiRegionRNN(xBump, struct( ...
     'ampInWN', 0.1, ...
     'nRunFree',5));
 
+mid = round(255/2);
+figure();
+subplot(111);
+plot(model.tRNN, model.RNN(mid, :));
+hold on;
+plot(tData, hBump(mid, :));
+plot(tData, xBump(mid, :));
+legend('RNN', 'hBump', 'xBump');
 
 function [tData, xBump, hBump] = bumpgen(number_units, dt_data, steps)
 % generate a simple bump for testing trainMultiRegionRNN
