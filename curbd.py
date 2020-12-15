@@ -55,7 +55,7 @@ def bump_gen(number_units, dt_data, steps):
 
 def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
                         tauWN=0.1, ampInWN=0.01, nRunTrain=2000,
-                        nRunFree=10, P0=1.0, trainType='currents',
+                        nRunFree=10, P0=1.0, trainType='rates',
                         nonLinearity=np.tanh,
                         nonLinearity_inv=np.arctanh,
                         resetPoints=None,
@@ -178,14 +178,13 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
     for nRun in range(0, nRunTot):
         if trainType == 'rates':
             H = nonLinearity_inv(Adata[:, 0, np.newaxis])
-            RNN[:, 0, np.newaxis] = Adata[:, 0, np.newaxis]
         else:
             H = Adata[:, 0, np.newaxis]
-            RNN[:, 0, np.newaxis] = nonLinearity(H)
+        RNN[:, 0, np.newaxis] = nonLinearity(H)
         # variables to track when to update the J matrix since the RNN and
         # data can have different dt values
         tLearn = 0  # keeps track of current time
-        iLearn = 1  # keeps track of last data point learned
+        iLearn = 0  # keeps track of last data point learned
         chi2 = 0.0
 
         for tt in range(1, len(tRNN)):
@@ -196,7 +195,7 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
             if tt in resetPoints:
                 timepoint = math.floor(tt / dtFactor)
                 if trainType == 'rates':
-                    H = nonLinearity_inv(Adata[:, 0, np.newaxis])
+                    H = nonLinearity_inv(Adata[:, timepoint, np.newaxis])
                 else:
                     H = Adata[:, timepoint]
             # compute next RNN step
@@ -210,7 +209,7 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
                 if trainType == 'currents':
                     err = JR - Adata[:, iLearn, np.newaxis]
                 elif trainType == 'rates':
-                    err = RNN[:, tt, np.newaxis] - Adata[:, iLearn, np.newaxis]
+                    err = nonLinearity(JR) - Adata[:, iLearn, np.newaxis]
                 else:
                     raise ValueError("Error training type not recognized."
                                      " Pick 'currents' or 'rates'")
@@ -242,7 +241,7 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
             ax = fig.add_subplot(gs[0, 0])
             ax.axis('off')
             if trainType == 'currents':
-                ax.imshow(nonLinearity(Adata), aspect='auto')
+                ax.imshow(nonLinearity(Adata[iTarget, :]), aspect='auto')
             elif trainType == 'rates':
                 ax.imshow(Adata[iTarget, :])
             ax.set_title('real rates')
