@@ -187,8 +187,15 @@ end
 for nRun=1:nRunTot
     % set initial condition to match target data
     H = Adata(:, 1);
-    % convert to currents through nonlinearity
-    RNN(:, 1) = nonlinearity(H);
+    
+    switch lower(trainType)
+        case 'currents'
+            % we already did nonlinearity to Adata above
+            RNN(:,1) = H;
+        case 'rates'
+            % convert to currents through nonlinearity
+            RNN(:, 1) = nonlinearity(H);
+    end
     
     % variables to track when to update the J matrix since the RNN and
     % data can have different dt values
