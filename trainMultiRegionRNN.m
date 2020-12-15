@@ -155,7 +155,6 @@ stdData = std(reshape(Adata(iTarget,:), length(iTarget)*length(tData), 1));
 switch lower(trainType)
     case 'currents'
         if verbose, disp('Training currents...'); end
-        Adata = nonlinearity(Adata);
     case 'rates'
         if verbose, disp('Training rates...'); end
     otherwise
@@ -188,14 +187,8 @@ for nRun=1:nRunTot
     % set initial condition to match target data
     H = Adata(:, 1);
     
-    switch lower(trainType)
-        case 'currents'
-            % we already did nonlinearity to Adata above
-            RNN(:,1) = H;
-        case 'rates'
-            % convert to currents through nonlinearity
-            RNN(:, 1) = nonlinearity(H);
-    end
+    % convert to currents through nonlinearity
+    RNN(:, 1) = nonlinearity(H);
     
     % variables to track when to update the J matrix since the RNN and
     % data can have different dt values
@@ -223,7 +216,7 @@ for nRun=1:nRunTot
             err = zeros(size(Adata,1),1);
             switch lower(trainType)
                 case 'currents'
-                    err(1:nUnits) = JR(1:nUnits, :) - Adata(1:nUnits, iLearn);
+                    err(1:nUnits) = JR(1:nUnits, :) - nonlinearity(Adata(1:nUnits, iLearn));
                 case 'rates'
                     err(1:nUnits) = RNN(1:nUnits, tt) - Adata(1:nUnits, iLearn);
             end
