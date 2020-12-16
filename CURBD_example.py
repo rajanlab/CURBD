@@ -21,10 +21,6 @@ sim = curbd.threeRegionSim(number_units=100)
 
 activity = np.concatenate((sim['Ra'], sim['Rb'], sim['Rc']), 0)
 
-# max = np.max(np.abs(activity))
-# xBump = 0.999 * activity / max
-# hBump = np.arctanh(xBump)
-
 Na = sim['params']['Na']
 Nb = sim['params']['Nb']
 Nc = sim['params']['Nc']
@@ -38,7 +34,6 @@ regions = np.array(regions, dtype=object)
 model = curbd.trainMultiRegionRNN(activity,
                                   dtData=sim['params']['dtData'],
                                   dtFactor=5,
-                                  trainType='rates',
                                   regions=regions,
                                   tauRNN=2*sim['params']['tau']/2,
                                   nRunTrain=500,
