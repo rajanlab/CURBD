@@ -12,54 +12,13 @@ import numpy.linalg
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
-
-def bump_gen(number_units, dt_data, steps):
-    """
-    Produces a easily recognizable activity pattern.
-
-    Parameters
-    ----------
-    number_units: int
-        number of units in network
-    dt_data: float
-        timestep size
-    steps: int
-        number of time steps
-
-    Returns
-    -------
-    tData: numpy.array
-        time series
-    xBump: numpy.array
-        NxT activity
-    hBump: numpy.array
-        NxT currents, via arctanh.
-
-    Examples
-    --------
-    >>> tdata, x_bump, h_bump = bump_gen(500, 0.0641, 165)
-    """
-    tData = np.arange(0, (steps + 1) * dt_data, dt_data)
-    xBump = np.zeros((number_units, len(tData)))
-    sig = 0.0343 * number_units  # % scaled correctly in neuron space!!!
-    norm_by = 2 * sig ** 2
-    for i in range(number_units):
-        stuff = (((float(i+1) - number_units * tData / tData[-1]) ** 2.0) /
-                 norm_by)
-        xBump[i, :] = np.exp(-stuff)
-    max = np.max(np.abs(xBump))
-    xBump = 0.999 * xBump / max
-    hBump = np.arctanh(xBump)
-    return tData, xBump, hBump
-
-
-def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
+def trainMultiRegionRNN(activity, dtData=1, dtFactor=1, g=1.5, tauRNN=0.01,
                         tauWN=0.1, ampInWN=0.01, nRunTrain=2000,
-                        nRunFree=10, P0=1.0, trainType='rates',
+                        nRunFree=10, P0=1.0,
                         nonLinearity=np.tanh,
                         nonLinearity_inv=np.arctanh,
                         resetPoints=None,
-                        plotStatus=False, verbose=False,
+                        plotStatus=True, verbose=True,
                         regions=None):
     r"""
 
@@ -86,13 +45,8 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
         number of untrained runs at end
     P0: float
         learning rate
-    trainType: str
-        train 'currents' or 'rates' directly. If 'rates', activity values must
-        be in the domain of nonLinearity_inv.
     nonLinearity: function
         inline function for nonLinearity
-    nonLinearity_inv: function
-        inline function for inverse nonLinearity, used of trainTypes is rates
     resetPoints: list of int
         list of indeces into T. default to only set initial state at time 1.
     plotStatus: bool
@@ -102,6 +56,9 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
     regions: dict()
         keys are region names, values are np.array of indeces.
     """
+    if dtData is None:
+        print('dtData not specified. Defaulting to 1.');
+        dtData = 1;
     if resetPoints is None:
         resetPoints = [0, ]
     if regions is None:
@@ -134,22 +91,12 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
 
     # set up target training data
     Adata = activity.copy()
-#    Adata = Adata/Adata.max()
-#    Adata = np.minimum(Adata, 0.999)
-#    Adata = np.maximum(Adata, -0.999)
+    Adata = Adata/Adata.max()
+    Adata = np.minimum(Adata, 0.999)
+    Adata = np.maximum(Adata, -0.999)
 
     # get standard deviation of entire data
     stdData = np.std(Adata[iTarget, :])
-
-    if trainType == 'currents':
-        if verbose:
-            print("training currents...")
-    elif trainType == 'rates':
-        if verbose:
-            print("training rates...")
-    else:
-        raise ValueError("Error training type not recognized. "
-                         "Pick 'currents' or 'rates'")
 
     # get indices for each sample of model data
     iModelSample = numpy.zeros(len(tData), dtype=np.int32)
@@ -176,10 +123,7 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
     # start training
     # loop along training runs
     for nRun in range(0, nRunTot):
-        if trainType == 'rates':
-            H = nonLinearity_inv(Adata[:, 0, np.newaxis])
-        else:
-            H = Adata[:, 0, np.newaxis]
+        H = Adata[:, 0, np.newaxis]
         RNN[:, 0, np.newaxis] = nonLinearity(H)
         # variables to track when to update the J matrix since the RNN and
         # data can have different dt values
@@ -194,10 +138,7 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
             # be used, but it's an option for concatenating multi-trial data
             if tt in resetPoints:
                 timepoint = math.floor(tt / dtFactor)
-                if trainType == 'rates':
-                    H = nonLinearity_inv(Adata[:, timepoint, np.newaxis])
-                else:
-                    H = Adata[:, timepoint]
+                H = Adata[:, timepoint]
             # compute next RNN step
             RNN[:, tt, np.newaxis] = nonLinearity(H)
             JR = (J.dot(RNN[:, tt]).reshape((number_units, 1)) +
@@ -206,13 +147,7 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
             # check if the RNN time coincides with a data point to update J
             if tLearn >= dtData:
                 tLearn = 0
-                if trainType == 'currents':
-                    err = JR - Adata[:, iLearn, np.newaxis]
-                elif trainType == 'rates':
-                    err = nonLinearity(JR) - Adata[:, iLearn, np.newaxis]
-                else:
-                    raise ValueError("Error training type not recognized."
-                                     " Pick 'currents' or 'rates'")
+                err = RNN[:, tt, np.newaxis] - Adata[:, iLearn, np.newaxis]
                 iLearn = iLearn + 1
                 # update chi2 using this error
                 chi2 += np.mean(err ** 2)
@@ -226,10 +161,7 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
                     J[:, iTarget.flatten()] = J[:, iTarget.reshape((number_units))] - c*np.outer(err.flatten(), k.flatten())
 
         rModelSample = RNN[iTarget, :][:, iModelSample]
-        if trainType == 'rates':
-            distance = np.linalg.norm(Adata[iTarget, :] - rModelSample)
-        else:
-            distance = np.linalg.norm(nonLinearity(Adata[iTarget, :]) - rModelSample)
+        distance = np.linalg.norm(Adata[iTarget, :] - rModelSample)
         pVar = 1 - (distance / (math.sqrt(len(iTarget) * len(tData))
                     * stdData)) ** 2
         pVars.append(pVar)
@@ -240,10 +172,7 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
             fig.clear()
             ax = fig.add_subplot(gs[0, 0])
             ax.axis('off')
-            if trainType == 'currents':
-                ax.imshow(nonLinearity(Adata[iTarget, :]), aspect='auto')
-            elif trainType == 'rates':
-                ax.imshow(Adata[iTarget, :])
+            ax.imshow(Adata[iTarget, :])
             ax.set_title('real rates')
 
             ax = fig.add_subplot(gs[0, 1])
@@ -262,10 +191,7 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
             ax = fig.add_subplot(gs[:, 2:4])
             idx = npr.choice(range(len(iTarget)))
             ax.plot(tRNN, RNN[iTarget[idx], :])
-            if trainType == 'currents':
-                ax.plot(tData, nonLinearity(Adata[iTarget[idx], :]))
-            elif trainType == 'rates':
-                ax.plot(tData, Adata[iTarget[idx], :])
+            ax.plot(tData, Adata[iTarget[idx], :])
             ax.set_title(nRun)
             fig.show()
             plt.pause(0.05)
@@ -281,10 +207,8 @@ def trainMultiRegionRNN(activity, dtData, dtFactor=1, g=1.5, tauRNN=0.01,
     out_params['nRunTot'] = nRunTot
     out_params['nRunTrain'] = nRunTrain
     out_params['nRunFree'] = nRunFree
-    out_params['trainType'] = trainType
     out_params['nonLinearity'] = nonLinearity
     out_params['resetPoints'] = resetPoints
-#    out_params['normByRegion'] = normByRegion
 
     out = {}
     out['regions'] = regions
