@@ -18,11 +18,6 @@ function [out] = trainMultiRegionRNN(activity,params)
 %   activity : N x T matrix where N is number of neurons and T is time
 %   params   : struct with fields corresponding to parameters to overwrite
 %          See comments in code for list and descriptions
-%          The only strictly required input is 'dtData'
-%          Note that regionIDs can be either:
-%            1) cell array with M entries with indices to each of M regions
-%            2) vector of ints with N entries with numerical labels for
-%               each neuron corresponding to the M possible regions
 %
 % OUTPUTS:
 %   out      : struct containing the results of the simulation
@@ -35,8 +30,12 @@ function [out] = trainMultiRegionRNN(activity,params)
 dtData         = NaN;     % time step (in s) of the training data
 dtFactor       = 1;       % number of interpolation steps for RNN
 normByRegion   = false;   % normalize activity by region or globally
-regionIDs      = [];      % used for the region designations (see above)
 regionNames    = {};      % cell of strings with region names, if desired
+regionIDs      = [];      % used for the region designations (see above)
+%          Note that regionIDs can be either:
+%            1) cell array with M entries with indices to each of M regions
+%            2) vector of ints with N entries with numerical labels for
+%               each neuron corresponding to the M possible regions
 % RNN parameters
 g              = 1.5;     % instability (chaos); g<1=damped, g>1=chaotic
 tauRNN         = 0.01;    % decay costant of RNN units
@@ -46,7 +45,6 @@ ampInWN        = 0.01;    % input amplitude of filtered white noise
 nRunTrain      = 2000;    % number of training runs
 nRunFree       = 10;      % number of untrained runs at end
 P0             = 1;       % learning rate
-trainType      = 'rates'; % train 'currents' or 'rates' directly
 nonlinearity   = @tanh;   % inline function for nonlinearity
 resetPoints    = 1;       % default to only set initial state at time 1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,7 +57,8 @@ assignParams(who,params);
 nLearn = size(activity,1); % number of learning steps
 nUnits = size(activity,1); % number of units
 if isnan(dtData)
-    error('ERROR: The dt of the data must be specified.');
+    disp('WARNING: The dt of the data was not specified. Defaulting to 1.');
+    dtData = 1;
 end
 dtRNN = dtData / dtFactor;
 nRunTot = nRunTrain + nRunFree;
@@ -105,9 +104,6 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % set up everything for training
 
-
-
-
 % if the RNN is bigger than training neurons, pick the ones to target
 learnList = randperm(nUnits);
 iTarget = learnList(1:nLearn);
@@ -150,16 +146,6 @@ Adata = max(Adata, -0.999);
 
 % get standard deviation of entire data
 stdData = std(reshape(Adata(iTarget,:), length(iTarget)*length(tData), 1));
-
-% if training currents, convert to currents through nonlinearity
-switch lower(trainType)
-    case 'currents'
-        if verbose, disp('Training currents...'); end
-    case 'rates'
-        if verbose, disp('Training rates...'); end
-    otherwise
-        error('ERROR: training type not recognized. Pick ''currents'' or ''rates''');
-end
 
 % get indices for each sample of model data
 iModelSample = zeros(length(tData), 1);
@@ -213,20 +199,15 @@ for nRun=1:nRunTot
         if (tLearn>=dtData)
             tLearn = 0;
             % compute error
-            err = zeros(size(Adata,1),1);
-            switch lower(trainType)
-                case 'currents'
-                    err(1:nUnits) = JR(1:nUnits, :) - nonlinearity(Adata(1:nUnits, iLearn));
-                case 'rates'
-                    err(1:nUnits) = RNN(1:nUnits, tt) - Adata(1:nUnits, iLearn);
-            end
-
+            err = RNN(1:nUnits, tt) - Adata(1:nUnits, iLearn);
+            
             % update chi2 using this error
             chi2(nRun) = chi2(nRun) + mean(err.^2);
-
+            
             % update learning index
             iLearn = iLearn + 1;
-
+            
+            % check if it's a training run
             if  (nRun<=nRunTrain)
                 % update J based on error gradient
                 k = PJ*RNN(iTarget, tt);
@@ -253,11 +234,7 @@ for nRun=1:nRunTot
         idx = randi(nUnits);
         subplot(2,4,1);
         hold on;
-        if strcmpi(trainType,'currents')
-            imagesc(nonlinearity((Adata(iTarget,:))));
-        else
-            imagesc((Adata(iTarget,:)));
-        end
+        imagesc(Adata(iTarget,:));
         axis tight;
         title('real');
         set(gca,'Box','off','TickDir','out','FontSize',14);
@@ -270,11 +247,7 @@ for nRun=1:nRunTot
         subplot(2,4,[3 4 7 8]);
         hold all;
         plot(tRNN,RNN(iTarget(idx),:));
-        if strcmpi(trainType,'currents')
-            plot(tData,nonlinearity((Adata(iTarget(idx),:))));
-        else
-            plot(tData,(Adata(iTarget(idx),:)));
-        end
+        plot(tData,Adata(iTarget(idx),:));
         title(nRun)
         set(gca,'Box','off','TickDir','out','FontSize',14);
         subplot(2,4,5);
@@ -303,7 +276,6 @@ outParams = struct( ...
     'nRunTot',nRunTot, ...
     'nRunTrain',nRunTrain, ...
     'nRunFree',nRunFree, ...
-    'trainType',trainType, ...
     'nonlinearity',nonlinearity, ...
     'resetPoints',resetPoints, ...
     'nUnits',nUnits, ...
