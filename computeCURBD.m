@@ -4,7 +4,7 @@ function [CURBD,CURBDLabels] = computeCURBD(varargin)
 % Performs Current-Based Decomposition (CURBD) of multi-region data. Ref:
 %
 % Perich MG et al. Inferring brain-wide interactions using data-constrained
-% recurrent neural network models. bioRxiv. DOI:
+% recurrent neural network models. bioRxiv. DOI: https://doi.org/10.1101/2020.12.18.423348
 %
 % Two input options:
 %   1) out = computeCURBD(model, params)
@@ -22,7 +22,7 @@ function [CURBD,CURBDLabels] = computeCURBD(varargin)
 %       Target regions are in rows and source regions are in columns.
 %   CURBDLabels: M x M cell array with string labels for each current
 %
-% 
+%
 % Written by Matthew G. Perich. Updated December 2020.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,12 +69,8 @@ for iRegionTarget = 1:nRegions
     in_target = regions{iRegionTarget,2};
     for iRegionSource = 1:nRegions
         in_source = regions{iRegionSource,2};
-        
+
         CURBD{iRegionTarget,iRegionSource} = J(in_target,in_source) * RNN(in_source,:);
         CURBDLabels{iRegionTarget,iRegionSource} = [regions{iRegionSource,1} ' to ' regions{iRegionTarget,1}];
     end
 end
-
-
-
-

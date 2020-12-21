@@ -5,7 +5,7 @@ function [out] = trainMultiRegionRNN(activity,params)
 % among other things, Current-Based Decomposition (CURBD). Ref:
 %
 % Perich MG et al. Inferring brain-wide interactions using data-constrained
-% recurrent neural network models. bioRxiv. DOI:
+% recurrent neural network models. bioRxiv. DOI: https://doi.org/10.1101/2020.12.18.423348
 %
 % out = trainMultiRegionRNN(activity,params)
 %
@@ -172,10 +172,10 @@ end
 for nRun=1:nRunTot
     % set initial condition to match target data
     H = Adata(:, 1);
-    
+
     % convert to currents through nonlinearity
     RNN(:, 1) = nonlinearity(H);
-    
+
     % variables to track when to update the J matrix since the RNN and
     % data can have different dt values
     tLearn = 0; % keeps track of current time
@@ -183,30 +183,30 @@ for nRun=1:nRunTot
     for tt=2:length(tRNN)
         % update current learning time
         tLearn = tLearn + dtRNN;
-        
+
         % check if the current index is a reset point. Typically this won't
         % be used, but it's an option for concatenating multi-trial data
         if ismember(tt,resetPoints)
             H = Adata(:,floor(tt/dtFactor)+1);
         end
-        
+
         % compute next RNN step
         RNN(:, tt) = nonlinearity(H);
         JR = J*RNN(:, tt) + inputWN(:, tt);
         H = H + dtRNN*(-H + JR)/tauRNN;
-        
+
         % check if the RNN time coincides with a data point to update J
         if (tLearn>=dtData)
             tLearn = 0;
             % compute error
             err = RNN(1:nUnits, tt) - Adata(1:nUnits, iLearn);
-            
+
             % update chi2 using this error
             chi2(nRun) = chi2(nRun) + mean(err.^2);
-            
+
             % update learning index
             iLearn = iLearn + 1;
-            
+
             % check if it's a training run
             if  (nRun<=nRunTrain)
                 % update J based on error gradient
@@ -218,16 +218,16 @@ for nRun=1:nRunTot
             end
         end
     end
-    
+
     rModelSample = RNN(iTarget, iModelSample);
-    
+
     % compute variance explained of activity by units
     pVar = 1 - (norm(Adata(iTarget,:) - rModelSample, 'fro')/(sqrt(length(iTarget)*length(tData))*stdData)).^2;
     pVars(nRun) = pVar;
-    
+
     % print status
     if verbose, fprintf('trial=%d pVar=%f chi2=%f\n', nRun, pVar, chi2(nRun)); end
-    
+
     % plot the data, chi2, error, and a random unit
     if plotStatus
         clf(f);

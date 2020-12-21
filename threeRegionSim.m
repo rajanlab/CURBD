@@ -6,7 +6,7 @@ function out = threeRegionSim(params)
 % Generates a simulated dataset with three interacting regions. Ref:
 %
 % Perich MG et al. Inferring brain-wide interactions using data-constrained
-% recurrent neural network models. bioRxiv. DOI:
+% recurrent neural network models. bioRxiv. DOI: https://doi.org/10.1101/2020.12.18.423348
 %
 % INPUTS:
 %   params : (optional) parameter struct. See code below for options.
@@ -132,27 +132,27 @@ for tt = 1:length(tData)
     Ra(:, tt) = tanh(hCa);
     Rb(:, tt) = tanh(hCb);
     Rc(:, tt) = tanh(hCc);
-    
+
     % chaotic responder
     JRa = Ja * Ra(:, tt) + ...
         ampInterReg * w_B2A .* Rb(:,tt) + ...
         ampInterReg * w_C2A .* Rc(:,tt);
     hCa = hCa + dtData*(-hCa + JRa) / tau;
-    
+
     % sequence driven
     JRb = Jb * Rb(:, tt) + ...
         ampInterReg * w_A2B .* Ra(:,tt) + ...
         ampInterReg * w_C2B .* Rc(:,tt) + ...
         ampInB * w_Seq2B .* hBump(:,tt);
     hCb = hCb + dtData * (-hCb + JRb) / tau;
-    
+
     % fixed point driven
     JRc = Jc * Rc(:, tt) + ...
         ampInterReg * w_B2C .* Rb(:,tt) + ...
         ampInterReg * w_A2C .* Ra(:,tt) + ...
         ampInC * w_Fix2C .* hFP(:,tt);
     hCc = hCc + dtData * (-hCc + JRc) / tau;
-    
+
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -206,7 +206,7 @@ out = struct( ...
 if plotSim
     % plot simulation
     c_lim = 1.5*[-1 1];
-    
+
     figure('Position',[100 100 900 700]);
     subplot(4,3,1)
     imagesc(tData, 1:Na, Ra);
@@ -230,8 +230,8 @@ if plotSim
     title('units from RNN A');
     axis square;
     set(gca,'Box','off','TickDir','out','FontSize',14);
-    
-    
+
+
     subplot(4,3,4)
     imagesc(tData, 1:Nb, Rb);
     axis square;
@@ -254,8 +254,8 @@ if plotSim
     title('units from RNN B');
     axis square;
     set(gca,'Box','off','TickDir','out','FontSize',14);
-    
-    
+
+
     subplot(4,3,7)
     imagesc(tData, 1:Nc, Rc);
     axis square;
@@ -278,22 +278,22 @@ if plotSim
     title('units from RNN C');
     axis square;
     set(gca,'Box','off','TickDir','out','FontSize',14);
-    
-    
+
+
     subplot(4,3,10)
     imagesc(tData, 1:Nc, Rfp);
     axis square;
     colorbar;
     set(gca,'Box','off','TickDir','out','FontSize',14);
     title('Fixed Point Driver');
-    
+
     subplot(4,3,11)
     imagesc(tData, 1:Nc, Rseq);
     axis square;
     colorbar;
     set(gca,'Box','off','TickDir','out','FontSize',14);
     title('Sequence Driver');
-    
+
     drawnow;
 end
 

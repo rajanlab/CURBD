@@ -5,9 +5,9 @@
 % perform Current-Based Decomposition (CURBD). Ref:
 %
 % Perich MG et al. Inferring brain-wide interactions using data-constrained
-% recurrent neural network models. bioRxiv. DOI:
+% recurrent neural network models. bioRxiv. DOI: https://doi.org/10.1101/2020.12.18.423348
 %
-% Written by Matthew G. Perich. Updated December 2020.
+% Written by Matthew G. Perich and Eugene Carter. Updated December 2020.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 """

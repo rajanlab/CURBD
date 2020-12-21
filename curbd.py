@@ -1,5 +1,11 @@
 """
-fill in.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Performs Current-Based Decomposition (CURBD) of multi-region data. Ref:
+%
+% Perich MG et al. Inferring brain-wide interactions using data-constrained
+% recurrent neural network models. bioRxiv. DOI: https://doi.org/10.1101/2020.12.18.423348
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 """
 
 import math
@@ -21,6 +27,8 @@ def trainMultiRegionRNN(activity, dtData=1, dtFactor=1, g=1.5, tauRNN=0.01,
                         plotStatus=True, verbose=True,
                         regions=None):
     r"""
+    Trains a data-constrained multi-region RNN. The RNN can be used for,
+    among other things, Current-Based Decomposition (CURBD).
 
     Parameters
     ----------
