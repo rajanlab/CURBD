@@ -161,7 +161,7 @@ def trainMultiRegionRNN(activity, dtData=1, dtFactor=1, g=1.5, tauRNN=0.01,
                 chi2 += np.mean(err ** 2)
 
                 if nRun < nRunTrain:
-                    r_slice = RNN[iTarget, tt].reshape(number_learn, 1)
+                    r_slice = RNN[iTarget, tt-1].reshape(number_learn, 1)
                     k = PJ.dot(r_slice)
                     rPr = (r_slice).T.dot(k)[0, 0]
                     c = 1.0/(1.0 + rPr)

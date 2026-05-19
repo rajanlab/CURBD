@@ -9,10 +9,10 @@ function [out] = trainMultiRegionRNN(activity,params)
 %
 % out = trainMultiRegionRNN(activity,params)
 %
-% Note that region identity is not used in training unless the normByRegion
+% Note that region/group identity is not used in training unless the normByGroup
 % option is true, in which case the identities are only used to scale the
 % target data by region appropriately. So you can train without telling
-% this code what the regionIDs are, so long as normByRegion is false.
+% this code what the groupIDs are, so long as normByGroup is false.
 %
 % INPUTS:
 %   activity : N x T matrix where N is number of neurons and T is time
@@ -29,21 +29,22 @@ function [out] = trainMultiRegionRNN(activity,params)
 % data parameters
 dtData         = NaN;     % time step (in s) of the training data
 dtFactor       = 1;       % number of interpolation steps for RNN
-normByRegion   = false;   % normalize activity by region or globally
-regionNames    = {};      % cell of strings with region names, if desired
-regionIDs      = [];      % used for the region designations (see above)
-%          Note that regionIDs can be either:
-%            1) cell array with M entries with indices to each of M regions
+normByGroup    = false;   % normalize activity by group (e.g. regions) or globally
+groupNames    = {};      % cell of strings with group names, if desired
+groupIDs      = [];      % used for the group designations (see above)
+%          Note that groupIDs can be either:
+%            1) cell array with M entries with indices to each of M groups (e.g. regions)
 %            2) vector of ints with N entries with numerical labels for
-%               each neuron corresponding to the M possible regions
+%               each neuron corresponding to the M possible groups
 % RNN parameters
 g              = 1.5;     % instability (chaos); g<1=damped, g>1=chaotic
 tauRNN         = 0.01;    % decay costant of RNN units
 tauWN          = 0.1;     % decay constant on filtered white noise inputs
 ampInWN        = 0.01;    % input amplitude of filtered white noise
 % training parameters
+J0             = [];      % if empty, intializes randomly
 nRunTrain      = 2000;    % number of training runs
-nRunFree       = 10;      % number of untrained runs at end
+nRunFree       = 1;      % number of untrained runs at end
 P0             = 1;       % learning rate
 nonlinearity   = @tanh;   % inline function for nonlinearity
 resetPoints    = 1;       % default to only set initial state at time 1
@@ -63,46 +64,50 @@ end
 dtRNN = dtData / dtFactor;
 nRunTot = nRunTrain + nRunFree;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% convert labels into a regions list
-%   cell array, column 1 is region name, column 2 is indices in RNN
-%   if no region names are given, defaults to "region 1", etc
-if ~isempty(regionIDs)
-    if iscell(regionIDs)
-        % get number of regions
-        nRegions = length(regionIDs);
-        idxRegion = regionIDs;
-    elseif numel(regionIDs) == nUnits
-        regVals = unique(regionIDs);
-        nRegions = length(regVals);
-        idxRegion = cell(nRegions,1);
-        for iReg = 1:nRegions
-            idxRegion{iReg} = find(regionIDs == regVals(iReg));
+% convert labels into a group list
+%   cell array, column 1 is group name, column 2 is indices in RNN
+%   if no group names are given, defaults to "group 1", etc
+if ~isempty(groupIDs)
+    if iscell(groupIDs)
+        % get number of groups
+        nGroups = length(groupIDs);
+        idxGroup = groupIDs;
+    elseif numel(groupIDs) == nUnits
+        groupVals = unique(groupIDs);
+        nGroups = length(groupVals);
+        idxGroup = cell(nGroups,1);
+        for iGroup = 1:nGroups
+            idxGroup{iGroup} = find(groupIDs == groupVals(iGroup));
         end
     else
-        error('ERROR: cannot parse the regionIDs input...');
+        error('ERROR: cannot parse the groupIDs input...');
     end
-    % now get region names
-    if isempty(regionNames)
-        regionNames = cell(nRegions,1);
-        for iReg = 1:nRegions
-            regionNames{iReg} = ['Region' num2str(iReg)];
+    % now get group names
+    if isempty(groupNames)
+        groupNames = cell(nGroups,1);
+        for iGroup = 1:nGroups
+            groupNames{iGroup} = ['Group' num2str(iGroup)];
         end
     end
-    if ~iscell(regionNames)
-        error('ERROR: cannot parse the region names...');
+    if ~iscell(groupNames)
+        error('ERROR: cannot parse the group names...');
     end
     % now put it all together
-    regions = cell(nRegions,2);
-    regions(:,1) = regionNames;
-    regions(:,2) = idxRegion;
+    groups = cell(nGroups,2);
+    groups(:,1) = groupNames;
+    groups(:,2) = idxGroup;
 else
-    if verbose, disp('FYI: no region info provided.'); end
-    regions = {};
-    nRegions = NaN;
+    if verbose, disp('FYI: no group info provided.'); end
+    groups = {};
+    nGroups = NaN;
 end
 
+if verbose, disp('Inputs processed.'); end
+    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % set up everything for training
+
+if verbose, disp('Initializing simulation.'); end
 
 % if the RNN is bigger than training neurons, pick the ones to target
 learnList = randperm(nUnits);
@@ -123,19 +128,23 @@ end
 inputWN = ampInWN*inputWN;
 
 % initialize directed interaction matrix J
-J = g * randn(nUnits,nUnits) / sqrt(nUnits);
-J0 = J;
+if isempty(J0)
+    J = g * randn(nUnits,nUnits) / sqrt(nUnits);
+    J0 = J;
+else
+    J = J0;
+end
 
 % set up target training data
 Adata = activity;
 % normalize
-if normByRegion
-    if ~isnan(nRegions)
-        for iReg = 1:nRegions
-            Adata(regions{iReg,2},:) = Adata(regions{iReg,2},:) / max(max(Adata(regions{iReg,2},:)));
+if normByGroup
+    if ~isnan(nGroups)
+        for iGroup = 1:nGroups
+            Adata(groups{iGroup,2},:) = Adata(groups{iGroup,2},:) / max(max(Adata(groups{iGroup,2},:)));
         end
     else
-        error('ERROR: no regions were defined. Cannot normalize by region.');
+        error('ERROR: no groups were defined. Cannot normalize by group.');
     end
 else
     Adata = Adata/max(max(Adata));
@@ -169,7 +178,9 @@ if plotStatus
 end
 
 % loop along training runs
+if verbose, disp('Beginning training.'); end
 for nRun=1:nRunTot
+    tic;
     % set initial condition to match target data
     H = Adata(:, 1);
 
@@ -191,9 +202,9 @@ for nRun=1:nRunTot
         end
 
         % compute next RNN step
-        RNN(:, tt) = nonlinearity(H);
-        JR = J*RNN(:, tt) + inputWN(:, tt);
+        JR = J*RNN(:, tt-1) + inputWN(:, tt);
         H = H + dtRNN*(-H + JR)/tauRNN;
+        RNN(:, tt) = nonlinearity(H);
 
         % check if the RNN time coincides with a data point to update J
         if (tLearn>=dtData)
@@ -210,8 +221,8 @@ for nRun=1:nRunTot
             % check if it's a training run
             if  (nRun<=nRunTrain)
                 % update J based on error gradient
-                k = PJ*RNN(iTarget, tt);
-                rPr = RNN(iTarget, tt)'*k;
+                k = PJ*RNN(iTarget, tt-1);
+                rPr = RNN(iTarget, tt-1)'*k;
                 c = 1.0/(1.0 + rPr);
                 PJ = PJ - c*(k*k');
                 J(1:nUnits, iTarget) = J(1:nUnits, iTarget) - c*err(1:nUnits, :)*k';
@@ -249,7 +260,8 @@ for nRun=1:nRunTot
         plot(tRNN,RNN(iTarget(idx),:));
         plot(tData,Adata(iTarget(idx),:));
         title(nRun)
-        set(gca,'Box','off','TickDir','out','FontSize',14);
+        set(gca,'Box','off','TickDir','out','FontSize',14);        
+        legend({'Model','Data'});
         subplot(2,4,5);
         hold on;
         plot(pVars(1:nRun));
@@ -262,12 +274,13 @@ for nRun=1:nRunTot
         set(gca,'Box','off','TickDir','out','FontSize',14);
         drawnow;
     end
+    toc;
 end
 
 % package up outputs
 outParams = struct( ...
     'dtFactor',dtFactor, ...
-    'normByRegion',normByRegion, ...
+    'normByGroup',normByGroup, ...
     'g',g, ...
     'P0',P0, ...
     'tauRNN',tauRNN, ...
@@ -279,9 +292,9 @@ outParams = struct( ...
     'nonlinearity',nonlinearity, ...
     'resetPoints',resetPoints, ...
     'nUnits',nUnits, ...
-    'nRegions',nRegions);
+    'nGroups',nGroups);
 out = struct( ...
-    'regions',{regions}, ...
+    'groups',{groups}, ...
     'RNN',RNN, ...
     'tRNN',tRNN, ...
     'dtRNN',dtRNN, ...
@@ -291,7 +304,7 @@ out = struct( ...
     'J',J, ...
     'J0',J0, ...
     'chi2',chi2, ...
-    'pVar',pVar, ...
+    'pVar',pVars, ...
     'stdData',stdData, ...
     'inputWN',inputWN, ...
     'iTarget',iTarget, ...
