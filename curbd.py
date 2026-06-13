@@ -406,13 +406,13 @@ def threeRegionSim(number_units=100,
 
     # generate time series simulated data
     Ra = np.empty((Na, len(tData)))
-    Ra[:] = np.NaN
+    Ra[:] = np.nan
 
     Rb = np.empty((Nb, len(tData)))
-    Rb[:] = np.NaN
+    Rb[:] = np.nan
 
     Rc = np.empty((Nc, len(tData)))
-    Rc[:] = np.NaN
+    Rc[:] = np.nan
 
     for tt in range(len(tData)):
         Ra[:, tt, np.newaxis] = np.tanh(hCa)
