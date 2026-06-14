@@ -600,8 +600,8 @@ def computeCURBD(sim):
     nRegions = regions.shape[0]
 
     # loop along all bidirectional pairs of regions
-    CURBD = np.empty((nRegions, nRegions), dtype=np.object)
-    CURBDLabels = np.empty((nRegions, nRegions), dtype=np.object)
+    CURBD = np.empty((nRegions, nRegions), dtype=object)
+    CURBDLabels = np.empty((nRegions, nRegions), dtype=object)
 
     for idx_trg in range(nRegions):
         in_trg = regions[idx_trg, 1]
